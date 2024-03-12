@@ -1,0 +1,71 @@
+#include <Braccio.h> // Include the Braccio library
+#include <Servo.h>
+
+Servo base;
+Servo shoulder;
+Servo elbow;
+Servo wrist_rot;
+Servo wrist_ver;
+Servo gripper;
+
+const float link_1 = 12.5; // Length of link 1 (shoulder to elbow)
+const float link_2 = 12.5; // Length of link 2 (elbow to wrist)
+const float link_3 = 7.15;  // Length of link 3 (wrist to end-effector)
+
+void setup() {
+  Serial.begin(9600);
+  delay(1000);
+  Braccio.begin(SOFT_START_DISABLED);
+}
+
+void loop() {
+  // final position of end effector
+  float x_final = 10, y_final = 20, gamma = 90;
+
+//We moved the robotic arm to three different positions 
+//2. x_final=15, y_final=15. gamma=60
+//3. x_final=-15, y_final=15. gamma=60
+
+
+  moveBraccio(x_final, y_final, gamma);
+
+  delay(1000);
+}
+
+void moveBraccio(float x_final, float y_final, float gamma) {
+  // intermediate position
+  float x_intermediate = x_final - (link_3 * cos(radians(gamma)));
+  float y_intermediate = y_final - (link_3 * sin(radians(gamma)));
+  float C = sqrt(pow(x_intermediate, 2) + pow(y_intermediate, 2));
+  float D = sqrt(pow(x_final, 2) + pow(y_final, 2));
+
+  // Check whether the position is reachable or not
+  if (((link_1 + link_2) > C) && ((link_1 + link_2 + link_3) > D)) {
+
+    float alpha = degrees(acos((pow(link_1, 2) + pow(C, 2) - pow(link_2, 2)) / (2 * link_1 * C)));
+    float Beta = degrees(acos((pow(link_1, 2) + pow(link_2, 2) - pow(C, 2)) / (2 * link_1 * link_2)));
+
+    // joint angle of shoulder servo motor
+    float theta1 = degrees(atan2(y_intermediate, x_intermediate)) - alpha;
+
+    // joint angle of elbow servo motor
+    float theta2 = 180 - Beta;
+
+    // joint angle of wrist servo motor
+    float theta3 = gamma - theta1 - theta2;
+
+    // final joint angles
+    float final_theta1 = theta1;
+    float final_theta2 = 90 + theta2;
+    float final_theta3 = 90 + theta3;
+
+    // Set servo angles and move the Braccio arm
+    Braccio.ServoMovement(20, 0, int(final_theta1), int(final_theta2), int(final_theta3), 0, 73);
+
+  }
+  else {
+    Serial.println("The position is not in the working space and is unreachable");
+  }
+}
+
+
