@@ -1,0 +1,95 @@
+import math
+import time
+import matplotlib.pyplot as plt
+
+L1=71.5
+L2=125
+L3=125
+
+def visualize_arm(shoulder_angle, elbow_angle, wrist_angle):
+    # Calculate end-effector position based on joint angles
+    x_end = L1 * math.cos(math.radians(shoulder_angle)) + L2 * math.cos(math.radians(shoulder_angle + elbow_angle)) + L3 * math.cos(math.radians(shoulder_angle + elbow_angle + wrist_angle))
+    y_end = L1 * math.sin(math.radians(shoulder_angle)) + L2 * math.sin(math.radians(shoulder_angle + elbow_angle)) + L3 * math.sin(math.radians(shoulder_angle + elbow_angle + wrist_angle))
+
+
+def ikinematics(links1, links2, links3, positionx, positiony, gamma):
+    # Inverse kinematics for 3-Link Planar Manipulator
+    # Inputs:
+    # links1,links2,links3 are length of each links in the robotic arm
+    # base is the length of base of the robotic arm
+    # positionx,positiony are joint angles in reference to x-axis
+    # gamma is the orientation
+    L12 = links1
+    L23 = links2
+    L34 = links3
+    xe = positionx
+    ye = positiony
+    g = gamma
+    #position P3
+    x3 = xe-(L34*math.cos(math.radians(g)))
+    y3 = ye-(L34*math.sin(math.radians(g)))
+    C = math.sqrt(x3**2 + y3**2)
+    if (L12+L23) > C:
+        #angle a and B
+        a = math.degrees(math.acos((L12**2 + L23**2 - C**2 )/(2*L12*L23)))
+        B = math.degrees(math.acos((L12**2 + C**2 - L23**2 )/(2*L12*C)))
+        #joint angles elbow-down
+        J1a = math.degrees(math.atan2(y3,x3))-B
+        J2a = 180-a
+        J3a = g - J1a -J2a
+        #joint angles elbow-up
+        J1b = math.degrees(math.atan2(y3,x3))+B
+        J2b = -(180-a)
+        J3b = g - J1b - J2b
+        print('The joint 1, 2 and 3 angles are ({},{}, {}) respectively for elbow-down configuration.'.format(J1a,J2a,J3a))
+        print('The joint 1, 2 and 3 angles are ({},{}, {}) respectively for elbow-up configuration.'.format(J1b,J2b,J3b))
+    else:
+        print('     Dimension error!')
+        print('     End-effecter is outside the workspace.')
+        return
+    
+    x2a = L12*math.cos(math.radians(J1a))
+    y2a = L12*math.sin(math.radians(J1a))
+    x2b = L12*math.cos(math.radians(J1b))
+    y2b = L12*math.sin(math.radians(J1b))
+    r = L12 + L23 + L34
+    plt.gca().set_aspect('equal', adjustable='box')
+    plt.gca().add_patch(plt.Rectangle((-r,-r),2*r,2*r,linewidth=0.5,edgecolor='k',facecolor='none',linestyle=':'))
+    plt.plot([0, x2a], [0, y2a], color='b')
+    plt.plot([x2a, x3], [y2a, y3], color='b')
+    plt.plot([x3, xe], [y3, ye], color='b')
+    plt.plot([0, x2b], [0, y2b], color='g', linestyle='--')
+    plt.plot([x2b, x3], [y2b, y3], color='g', linestyle='--')
+    plt.plot([x3, xe], [y3, ye], color='b', linestyle='--')
+    plt.plot([0, 0], [-r/10, r/10], color='r')
+    plt.plot([-r/10, r/10], [0, 0], color='r')
+    plt.plot([0, x2a, x3], [0, y2a, y3], 'o', color='b')
+    plt.plot([x2b], [y2b], 'o', color='g')
+    plt.plot([xe], [ye], 'o', color='r')
+    plt.grid(True)
+    plt.xlabel('x-axis')
+    plt.ylabel('y-axis')
+    plt.title('Inverse Kinematics 3-Links Planar Manipulator')
+    plt.show()
+    visualize_arm(J1a, J2a, J3a)
+  
+
+ikinematics(71.5, 125, 125, 100, 100, 110)
+ikinematics(71.5, 125, 125, 150, 20, 50 )
+
+
+
+
+
+
+
+
+OUTPUT
+
+The joint 1, 2 and 3 angles are (-67.33488106993252,90.17328814077891, 87.16159292915361) respectively for elbow-down configuration.
+The joint 1, 2 and 3 angles are (53.38725725209659,-90.17328814077891, 146.78603088868232) respectively for elbow-up configuration.
+
+
+The joint 1, 2 and 3 angles are (-137.10207953295503,124.5875423571139, 62.51453717584113) respectively for elbow-down configuration.
+The joint 1, 2 and 3 angles are (42.29449327458607,-124.5875423571139, 132.29304908252783) respectively for elbow-up configuration.
+
